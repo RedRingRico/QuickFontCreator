@@ -1,9 +1,9 @@
+#include <Main.h>
 #include <iostream>
 #include <Arguments.h>
 #include <string>
 #include <FontFile.h>
-
-void PrintUsage( );
+#include <GitVersion.h>
 
 int main( int p_Argc, char **p_ppArgv )
 {
@@ -24,12 +24,14 @@ int main( int p_Argc, char **p_ppArgv )
 	
 	if( p_Argc == 1 )
 	{
-		PrintUsage( );
+		PrintUsage( p_ppArgv[ 0 ] );
 		return 0;
 	}
 
-	std::string TargaFile;
 	FontFile Output;
+
+	std::cout << "ZED Quick Font Creator | Ver. " << GIT_BUILD_VERSION <<
+		std::endl;
 
 	for( int i = 1; i < p_Argc; ++i )
 	{
@@ -49,9 +51,7 @@ int main( int p_Argc, char **p_ppArgv )
 
 				++i;
 
-				TargaFile = p_ppArgv[ i ];
-
-				if( Output.SetTargaFile( TargaFile ) )
+				if( Output.SetTargaFile( p_ppArgv[ i ] ) )
 				{
 					std::cout << "Error, file not valid" << std::endl;
 					return 1;
@@ -61,6 +61,21 @@ int main( int p_Argc, char **p_ppArgv )
 			}
 			case ARGUMENT_GLYPH:
 			{
+				if( ( i + 1 ) > ( p_Argc - 1 ) )
+				{
+					std::cout << "Error, no glyph file given" << std::endl;
+
+					return 1;
+				}
+
+				++i;
+
+				if( Output.SetGlyphFile( p_ppArgv[ i ] ) )
+				{
+					std::cout << "Error, glyph file not valid" << std::endl;
+					return 1;
+				}
+
 				break;
 			}
 			case ARGUMENT_BACKGROUND:
@@ -88,8 +103,19 @@ int main( int p_Argc, char **p_ppArgv )
 	return 0;
 }
 
-void PrintUsage( )
+void PrintUsage( const char *p_pProgram )
 {
-	std::cout << "Use it like this..." << std::endl;
+	std::cout << "Usage:" << std::endl;
+	std::cout << "\t" << p_pProgram << " <options> zedfontfile" << std::endl;
+	std::cout << std::endl << "Options:" << std::endl;
+	std::cout << "\t-g <glyph file>" << std::endl;
+	std::cout << "\t-t <targa file>" << std::endl;
+	std::cout << "\t-b <background mode>" << std::endl;
+	std::cout << "\t-c <colour key>" << std::endl << std::endl;
+	std::cout << "Background mode may be one of:" << std::endl;
+	std::cout << "\tcolourkey" << std::endl;
+	std::cout << "\tsolid" << std::endl;
+	std::cout << "\ttranparent" << std::endl;
+	std::cout << "\ttranslucent" << std::endl;
 }
 

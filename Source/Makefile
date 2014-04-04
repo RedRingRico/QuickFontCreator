@@ -107,7 +107,7 @@ VERSIONINFO:
 	@printf "%s" "------------------------- Generating Version Information ---"
 	@printf "%s\n" "-------------------"
 	@mkdir -p Headers
-	@sh ./GitVersion.sh ./Headers/GitVersion.hpp $(PROJECT)
+	@sh ./GitVersion.sh ./Headers/GitVersion.h $(PROJECT)
 	@printf "%s" "------------------------------------------------------------"
 	@printf "%s\n" "-------------------"
 

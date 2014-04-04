@@ -1,6 +1,8 @@
 #include <FontFile.h>
 #include <Utility.h>
 #include <cstring>
+#include <iostream>
+#include <GlyphSet.h>
 
 FontFile::FontFile( )
 {
@@ -39,6 +41,18 @@ std::string FontFile::GetTargaFile( ) const
 	return m_TargaFile;
 }
 
+uint32_t FontFile::SetGlyphFile( const std::string p_GlyphFile )
+{
+	if( !FileExists( p_GlyphFile.c_str( ) ) )
+	{
+		return 1;
+	}
+
+	m_GlyphFile = p_GlyphFile;
+
+	return 0;
+}
+
 uint32_t FontFile::Write( )
 {
 	if( m_FilePath.empty( ) )
@@ -70,6 +84,10 @@ uint32_t FontFile::Write( )
 
 	if( !m_GlyphFile.empty( ) )
 	{
+		std::cout << "Would be writing glyph data..." << std::endl;
+		GlyphSet Glyphs;
+
+		Glyphs.ReadFromFile( m_GlyphFile );
 	}
 
 	if( !m_TargaFile.empty( ) )
@@ -112,6 +130,8 @@ uint32_t FontFile::Write( )
 		// Write end chunk
 		SafeDeleteArray( pTargaData );
 	}
+
+	fclose( pOutput );
 
 	return 0;
 }

@@ -6,7 +6,6 @@
 bool FileExists( const char *p_pFilePath )
 {
 	struct stat FileStat;
-	std::cout << "Testing file" << std::endl;
 
 	if( lstat( p_pFilePath, &FileStat ) < 0 )
 	{
@@ -18,14 +17,11 @@ bool FileExists( const char *p_pFilePath )
 			}
 		}
 
-		std::cout << "ERR" << std::endl;
-
 		return false;
 	}
 
 	if( S_ISREG( FileStat.st_mode ) || S_ISLNK( FileStat.st_mode ) )
 	{
-		std::cout << "Fine" << std::endl;
 		return true;
 	}
 

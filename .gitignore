@@ -53,6 +53,7 @@ local.properties
 
 # Git version header #
 GitVersion.hpp
+GitVersion.h
 
 # LaTeX temporary files
 *.aux
