@@ -22,6 +22,10 @@ public:
 
 	uint32_t ReadFromFile( const std::string p_FileName );
 
+	size_t GetCount( ) const;
+
+	uint32_t GetGlyph( const size_t p_Index, GLYPH_METRICS *p_pGlyph ) const;
+
 private:
 	std::list< GLYPH_METRICS > m_GlyphMetrics;
 

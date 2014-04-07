@@ -30,6 +30,11 @@ uint32_t GetArgumentType( const char *p_pArgument )
 		return ARGUMENT_COLOURKEY;
 	}
 
+	if( Argument.compare( "-o" ) == 0 )
+	{
+		return ARGUMENT_OUTPUTFILE;
+	}
+
 	return ARGUMENT_INVALID;
 }
 

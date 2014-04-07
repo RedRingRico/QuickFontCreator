@@ -89,6 +89,36 @@ uint32_t GlyphSet::ReadFromFile( const std::string p_FileName )
 	return 0;
 }
 
+size_t GlyphSet::GetCount( ) const
+{
+	return m_GlyphMetrics.size( );
+}
+
+uint32_t GlyphSet::GetGlyph( const size_t p_Index,
+	GLYPH_METRICS *p_pGlyph ) const
+{
+	if( p_Index > m_GlyphMetrics.size( ) )
+	{
+		std::cout << "<ERROR> Attempting to acquire a glyph outside the valid "
+			"range [Tried getting glyph " << p_Index << " Maximum is " <<
+			m_GlyphMetrics.size( ) << std::endl;
+
+		return 1;
+	}
+
+	std::list< GLYPH_METRICS >::const_iterator GlyphItr =
+		m_GlyphMetrics.begin( );
+	
+	for( size_t i = 0; i < p_Index; ++i )
+	{
+		++GlyphItr;
+	}
+
+	( *p_pGlyph ) = ( *GlyphItr );
+
+	return 0;
+}
+
 uint32_t GlyphSet::ProcessLine( const std::string p_Line )
 {
 	if( p_Line.empty( ) )
@@ -114,6 +144,8 @@ uint32_t GlyphSet::ProcessLine( const std::string p_Line )
 	std::cout << "\tY:         " << Metrics.Y << std::endl;
 	std::cout << "\tWidth:     " << Metrics.Width << std::endl;
 	std::cout << "\tHeight:    " << Metrics.Height << std::endl;
+
+	m_GlyphMetrics.push_back( Metrics );
 
 	return 0;
 }

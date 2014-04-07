@@ -18,8 +18,8 @@ BRANCH=`git rev-parse --abbrev-ref HEAD`
 printf "Generating $2 Git Version Header...\n"
 printf "Revision: $GITROLLINGCOUNT [$GITHASH] $GITDATE\n"
 
-printf "#ifndef __%s_GITVERSION_HPP__\n" $PROJECT > $GITHEADER
-printf "#define __%s_GITVERSION_HPP__\n\n" $PROJECT >> $GITHEADER
+printf "#ifndef __%s_GITVERSION_H__\n" $PROJECT > $GITHEADER
+printf "#define __%s_GITVERSION_H__\n\n" $PROJECT >> $GITHEADER
 
 printf "#define GIT_COMMITHASH			\"%s\"\n" "$GITHASH" >> $GITHEADER
 printf "#define GIT_COMMITHASHSHORT		\"%s\"\n" "$GITHASHSHORT" >> $GITHEADER

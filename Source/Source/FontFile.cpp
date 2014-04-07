@@ -84,10 +84,59 @@ uint32_t FontFile::Write( )
 
 	if( !m_GlyphFile.empty( ) )
 	{
-		std::cout << "Would be writing glyph data..." << std::endl;
 		GlyphSet Glyphs;
 
 		Glyphs.ReadFromFile( m_GlyphFile );
+
+		size_t GlyphCount = Glyphs.GetCount( );
+
+		if( GlyphCount == 0 )
+		{
+			std::cout << "<WARNING> No glyphs have been processed" <<
+				std::endl;
+		}
+		else
+		{
+			std::cout << "Writing " << GlyphCount << " glyphs ..." <<
+				std::endl;
+
+			bool WriteFailed = false;
+
+			for( size_t i = 0; i < GlyphCount; ++i )
+			{
+				GLYPH_METRICS Glyph;
+				if( Glyphs.GetGlyph( i, &Glyph ) != 0 )
+				{
+					std::cout << "<ERORR> Failed to write glyph " << i <<
+						std::endl;
+					WriteFailed |= true;
+
+					break;
+				}
+				
+				size_t Written = fwrite( &Glyph, sizeof( Glyph ), 1, pOutput );
+
+				if( Written != 1 )
+				{
+					std::cout << "<ERROR> Failed to write glyph " << i <<
+						" to disk" << std::endl;
+					WriteFailed |= true;
+
+					break;
+				}
+
+				std::cout << "Glyph " << i << " written to disk" << std::endl;
+			}
+
+			if( WriteFailed )
+			{
+				std::cout << "Incomplete" << std::endl << std::endl;
+			}
+			else
+			{
+				std::cout << "Complete" << std::endl << std::endl;
+			}
+		}
 	}
 
 	if( !m_TargaFile.empty( ) )
@@ -103,7 +152,12 @@ uint32_t FontFile::Write( )
 		size_t BytesRead = ftell( pTargaFile );
 		rewind( pTargaFile );
 
+		std::cout << "Writing " << m_TargaFile << " as Targa to disk ..." <<
+			std::endl;
+
 		// Write start chunk
+		bool WriteFailed = false;
+		bool ReadFailed = false;
 
 		while( BytesRead > 0 )
 		{
@@ -123,12 +177,44 @@ uint32_t FontFile::Write( )
 			size_t Read = fread( pTargaData, sizeof( unsigned char ),
 				BytesToRead, pTargaFile );
 
-			fwrite( pTargaData, sizeof( unsigned char ), BytesToRead,
-				pOutput );
+			if( Read != BytesToRead )
+			{
+				std::cout << "<ERROR> Failed to read Targa file" << std::endl;
+				std::cout << "\tExpected " << BytesToRead << " bytes, "
+					"received " << Read << " bytes" << std::endl;
+				ReadFailed |= true;
+
+				break;
+			}
+
+			size_t Written = fwrite( pTargaData, sizeof( unsigned char ),
+				BytesToRead, pOutput );
+
+			if( Written != BytesToRead )
+			{
+				std::cout << "<ERROR> Failed to write Targa file" << std::endl;
+				std::cout << "\tExpected " << BytesToRead << " bytes, "
+					"recieved " << Written << " bytes" << std::endl;
+				WriteFailed |= true;
+
+				break;
+			}
 		}
 
 		// Write end chunk
 		SafeDeleteArray( pTargaData );
+
+		if( WriteFailed || ReadFailed )
+		{
+			fclose( pOutput );
+			std::cout << "Incomplete" << std::endl;
+
+			return 1;
+		}
+		else
+		{
+			std::cout << "Complete" << std::endl;
+		}
 	}
 
 	fclose( pOutput );
