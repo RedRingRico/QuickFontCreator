@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <string>
 
+#pragma pack( 1 )
+
 typedef struct __GLYPH_METRICS
 {
 	unsigned char	Character;
@@ -13,6 +15,8 @@ typedef struct __GLYPH_METRICS
 	uint32_t		Width;
 	uint32_t		Height;
 }GLYPH_METRICS;
+
+#pragma pack( )
 
 class GlyphSet
 {
@@ -25,6 +29,8 @@ public:
 	size_t GetCount( ) const;
 
 	uint32_t GetGlyph( const size_t p_Index, GLYPH_METRICS *p_pGlyph ) const;
+
+	size_t GetSizeOnDisk( ) const;
 
 private:
 	std::list< GLYPH_METRICS > m_GlyphMetrics;

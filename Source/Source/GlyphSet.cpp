@@ -119,6 +119,11 @@ uint32_t GlyphSet::GetGlyph( const size_t p_Index,
 	return 0;
 }
 
+size_t GlyphSet::GetSizeOnDisk( ) const
+{
+	return ( m_GlyphMetrics.size( ) * sizeof( GLYPH_METRICS ) );
+}
+
 uint32_t GlyphSet::ProcessLine( const std::string p_Line )
 {
 	if( p_Line.empty( ) )

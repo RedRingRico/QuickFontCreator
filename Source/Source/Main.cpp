@@ -86,6 +86,10 @@ int main( int p_Argc, char **p_ppArgv )
 			{
 				break;
 			}
+			case ARGUMENT_OUTPUTFILE:
+			{
+				break;
+			}
 			default:
 			{
 				std::cout << "<ERROR> Unknown argument type: " <<

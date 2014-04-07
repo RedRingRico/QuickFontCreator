@@ -3,6 +3,7 @@
 #include <cstring>
 #include <iostream>
 #include <GlyphSet.h>
+#include <Chunk.h>
 
 FontFile::FontFile( )
 {
@@ -60,10 +61,10 @@ uint32_t FontFile::Write( )
 		return 1;
 	}
 
-	FILE *pOutput = nullptr;
-	pOutput = fopen( m_FilePath.c_str( ), "wb" );
+	FILE *pOutputFile = nullptr;
+	pOutputFile = fopen( m_FilePath.c_str( ), "wb" );
 
-	if( pOutput == nullptr )
+	if( pOutputFile == nullptr )
 	{
 		return 1;
 	}
@@ -79,7 +80,7 @@ uint32_t FontFile::Write( )
 
 	Header.Type = BITMAP_FONT;
 
-	fwrite( &Header, sizeof( Header ), 1, pOutput );
+	fwrite( &Header, sizeof( Header ), 1, pOutputFile );
 
 
 	if( !m_GlyphFile.empty( ) )
@@ -90,52 +91,74 @@ uint32_t FontFile::Write( )
 
 		size_t GlyphCount = Glyphs.GetCount( );
 
-		if( GlyphCount == 0 )
+		if( WriteChunk( ZED_CHUNK_FONT_GLYPH, Glyphs.GetSizeOnDisk( ),
+			pOutputFile ) != 0 )
 		{
-			std::cout << "<WARNING> No glyphs have been processed" <<
-				std::endl;
+			SafeCloseFile( pOutputFile );
+			std::cout << "<ERROR> Failed to write glyph chunk" << std::endl;
+
+			return 1;
 		}
 		else
 		{
-			std::cout << "Writing " << GlyphCount << " glyphs ..." <<
-				std::endl;
-
-			bool WriteFailed = false;
-
-			for( size_t i = 0; i < GlyphCount; ++i )
+			if( GlyphCount == 0 )
 			{
-				GLYPH_METRICS Glyph;
-				if( Glyphs.GetGlyph( i, &Glyph ) != 0 )
-				{
-					std::cout << "<ERORR> Failed to write glyph " << i <<
-						std::endl;
-					WriteFailed |= true;
-
-					break;
-				}
-				
-				size_t Written = fwrite( &Glyph, sizeof( Glyph ), 1, pOutput );
-
-				if( Written != 1 )
-				{
-					std::cout << "<ERROR> Failed to write glyph " << i <<
-						" to disk" << std::endl;
-					WriteFailed |= true;
-
-					break;
-				}
-
-				std::cout << "Glyph " << i << " written to disk" << std::endl;
-			}
-
-			if( WriteFailed )
-			{
-				std::cout << "Incomplete" << std::endl << std::endl;
+				std::cout << "<WARNING> No glyphs have been processed" <<
+					std::endl;
 			}
 			else
 			{
-				std::cout << "Complete" << std::endl << std::endl;
+				std::cout << "Writing " << GlyphCount << " glyphs ..." <<
+					std::endl;
+
+				bool WriteFailed = false;
+
+				for( size_t i = 0; i < GlyphCount; ++i )
+				{
+					GLYPH_METRICS Glyph;
+					if( Glyphs.GetGlyph( i, &Glyph ) != 0 )
+					{
+						std::cout << "<ERORR> Failed to write glyph " << i <<
+							std::endl;
+						WriteFailed |= true;
+
+						break;
+					}
+					
+					size_t Written = fwrite( &Glyph, sizeof( Glyph ), 1,
+						pOutputFile );
+
+					if( Written != 1 )
+					{
+						std::cout << "<ERROR> Failed to write glyph " << i <<
+							" to disk" << std::endl;
+						WriteFailed |= true;
+
+						break;
+					}
+
+					std::cout << "Glyph " << i << " written to disk" <<
+						std::endl;
+				}
+
+				if( WriteFailed )
+				{
+					std::cout << "Incomplete" << std::endl << std::endl;
+				}
+				else
+				{
+					std::cout << "Complete" << std::endl << std::endl;
+				}
 			}
+		}
+
+		if( WriteChunk( ZED_CHUNK_END, 0, pOutputFile ) != 0 )
+		{
+			SafeCloseFile( pOutputFile );
+			std::cout << "<ERROR> Failed to write end chunk for glyphs" <<
+				std::endl;
+
+			return 1;
 		}
 	}
 
@@ -156,68 +179,90 @@ uint32_t FontFile::Write( )
 			std::endl;
 
 		// Write start chunk
-		bool WriteFailed = false;
-		bool ReadFailed = false;
-
-		while( BytesRead > 0 )
+		if( WriteChunk( ZED_CHUNK_FONT_TEXTURE, BytesRead, pOutputFile ) != 0 )
 		{
-			size_t BytesToRead = 0;
-
-			if( FILE_OUTPUT_BUFFER_SIZE > BytesRead )
-			{
-				BytesToRead = BytesRead;
-				BytesRead -= BytesRead;
-			}
-			else
-			{
-				BytesToRead = FILE_OUTPUT_BUFFER_SIZE;
-				BytesRead -= FILE_OUTPUT_BUFFER_SIZE;
-			}
-
-			size_t Read = fread( pTargaData, sizeof( unsigned char ),
-				BytesToRead, pTargaFile );
-
-			if( Read != BytesToRead )
-			{
-				std::cout << "<ERROR> Failed to read Targa file" << std::endl;
-				std::cout << "\tExpected " << BytesToRead << " bytes, "
-					"received " << Read << " bytes" << std::endl;
-				ReadFailed |= true;
-
-				break;
-			}
-
-			size_t Written = fwrite( pTargaData, sizeof( unsigned char ),
-				BytesToRead, pOutput );
-
-			if( Written != BytesToRead )
-			{
-				std::cout << "<ERROR> Failed to write Targa file" << std::endl;
-				std::cout << "\tExpected " << BytesToRead << " bytes, "
-					"recieved " << Written << " bytes" << std::endl;
-				WriteFailed |= true;
-
-				break;
-			}
-		}
-
-		// Write end chunk
-		SafeDeleteArray( pTargaData );
-
-		if( WriteFailed || ReadFailed )
-		{
-			fclose( pOutput );
-			std::cout << "Incomplete" << std::endl;
+			SafeCloseFile( pOutputFile );
+			std::cout << "<ERROR> Failed to write Targa start chunk" <<
+				std::endl;
 
 			return 1;
 		}
 		else
 		{
-			std::cout << "Complete" << std::endl;
+			bool WriteFailed = false;
+			bool ReadFailed = false;
+
+			while( BytesRead > 0 )
+			{
+				size_t BytesToRead = 0;
+
+				if( FILE_OUTPUT_BUFFER_SIZE > BytesRead )
+				{
+					BytesToRead = BytesRead;
+					BytesRead -= BytesRead;
+				}
+				else
+				{
+					BytesToRead = FILE_OUTPUT_BUFFER_SIZE;
+					BytesRead -= FILE_OUTPUT_BUFFER_SIZE;
+				}
+
+				size_t Read = fread( pTargaData, sizeof( unsigned char ),
+					BytesToRead, pTargaFile );
+
+				if( Read != BytesToRead )
+				{
+					std::cout << "<ERROR> Failed to read Targa file" <<
+						std::endl;
+					std::cout << "\tExpected " << BytesToRead << " bytes, "
+						"received " << Read << " bytes" << std::endl;
+					ReadFailed |= true;
+
+					break;
+				}
+
+				size_t Written = fwrite( pTargaData, sizeof( unsigned char ),
+					BytesToRead, pOutputFile );
+
+				if( Written != BytesToRead )
+				{
+					std::cout << "<ERROR> Failed to write Targa file" <<
+						std::endl;
+					std::cout << "\tExpected " << BytesToRead << " bytes, "
+						"recieved " << Written << " bytes" << std::endl;
+					WriteFailed |= true;
+
+					break;
+				}
+			}
+
+
+			SafeDeleteArray( pTargaData );
+
+			if( WriteFailed || ReadFailed )
+			{
+				SafeCloseFile( pOutputFile );
+				std::cout << "Incomplete" << std::endl;
+
+				return 1;
+			}
+			else
+			{
+				std::cout << "Complete" << std::endl;
+			}
+		}
+
+		if( WriteChunk( ZED_CHUNK_END, 0, pOutputFile ) != 0 )
+		{
+			SafeCloseFile( pOutputFile );
+			std::cout << "<ERROR> Failed to write end chunk for Targa" <<
+				std::endl;
+
+			return 1;
 		}
 	}
 
-	fclose( pOutput );
+	SafeCloseFile( pOutputFile );
 
 	return 0;
 }
