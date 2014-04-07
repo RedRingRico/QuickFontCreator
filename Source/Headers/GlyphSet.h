@@ -24,6 +24,11 @@ public:
 
 private:
 	std::list< GLYPH_METRICS > m_GlyphMetrics;
+
+	uint32_t ProcessLine( const std::string p_Line );
+	uint32_t NextNumberUL( const std::string p_Line, size_t *p_pStartChar,
+		size_t *p_pEndChar ) const;
 };
 
 #endif // __QUICKFONTCRATOR_GLYPH_H__
+
