@@ -101,6 +101,8 @@ uint32_t FontFile::Write( )
 		}
 		else
 		{
+			fwrite( &GlyphCount, sizeof( uint32_t ), 1, pOutputFile );
+
 			if( GlyphCount == 0 )
 			{
 				std::cout << "<WARNING> No glyphs have been processed" <<
@@ -260,6 +262,15 @@ uint32_t FontFile::Write( )
 
 			return 1;
 		}
+	}
+
+	if( WriteChunk( ZED_CHUNK_END, 0, pOutputFile ) != 0 )
+	{
+		SafeCloseFile( pOutputFile );
+		std::cout << "<ERROR> Failed to write the final end chunk" <<
+			std::endl;
+
+		return 1;
 	}
 
 	SafeCloseFile( pOutputFile );
