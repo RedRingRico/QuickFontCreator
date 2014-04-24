@@ -40,6 +40,27 @@ typedef struct __FONTHEADER
 	FONT_BACKGROUNDMODE	BackgroundMode;
 	ZED_COLOUR			ColourKey;
 }FONTHEADER;
+
+typedef struct __GLYPHHEADER
+{
+	uint32_t	Count;
+	uint32_t	TextureWidth;
+	uint32_t	TextureHeight;
+}GLYPHHEADER;
+
+typedef struct __TARGA_HEADER
+{
+	unsigned char	IDLength;
+	unsigned char	ColourmapType;
+	unsigned char	ImageType;
+	unsigned char	ColourmapSpecification[ 5 ];
+	uint16_t		X;
+	uint16_t		Y;
+	uint16_t		Width;
+	uint16_t		Height;
+	unsigned char	BitsPerPixel;
+	unsigned char	ImageDescription;
+}TARGA_HEADER,*LPTARGA_HEADER;
 #pragma pack( )
 
 class FontFile
@@ -66,6 +87,8 @@ private:
 	std::string m_FilePath;
 	std::string m_TargaFile;
 	std::string m_GlyphFile;
+
+	GLYPHHEADER	m_GlyphHeader;
 };
 
 #endif

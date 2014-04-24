@@ -121,8 +121,7 @@ uint32_t GlyphSet::GetGlyph( const size_t p_Index,
 
 size_t GlyphSet::GetSizeOnDisk( ) const
 {
-	return ( m_GlyphMetrics.size( ) * sizeof( GLYPH_METRICS ) +
-		sizeof( uint32_t ) );
+	return ( m_GlyphMetrics.size( ) * sizeof( GLYPH_METRICS ) );
 }
 
 uint32_t GlyphSet::ProcessLine( const std::string p_Line )
@@ -143,6 +142,7 @@ uint32_t GlyphSet::ProcessLine( const std::string p_Line )
 	Metrics.Y = this->NextNumberUL( p_Line, &StartChar, &EndChar );
 	Metrics.Width = this->NextNumberUL( p_Line, &StartChar, &EndChar );
 	Metrics.Height = this->NextNumberUL( p_Line, &StartChar, &EndChar );
+	Metrics.BearingY = this->NextNumberUL( p_Line, &StartChar, &EndChar );
 
 	std::cout << "Glyph metrics" << std::endl;
 	std::cout << "\tCharacter: " << Metrics.Character << std::endl;
@@ -150,6 +150,7 @@ uint32_t GlyphSet::ProcessLine( const std::string p_Line )
 	std::cout << "\tY:         " << Metrics.Y << std::endl;
 	std::cout << "\tWidth:     " << Metrics.Width << std::endl;
 	std::cout << "\tHeight:    " << Metrics.Height << std::endl;
+	std::cout << "\tBearing Y: " << Metrics.BearingY << std::endl;
 
 	m_GlyphMetrics.push_back( Metrics );
 

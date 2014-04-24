@@ -81,89 +81,6 @@ uint32_t FontFile::Write( )
 	Header.Type = BITMAP_FONT;
 
 	fwrite( &Header, sizeof( Header ), 1, pOutputFile );
-
-
-	if( !m_GlyphFile.empty( ) )
-	{
-		GlyphSet Glyphs;
-
-		Glyphs.ReadFromFile( m_GlyphFile );
-
-		size_t GlyphCount = Glyphs.GetCount( );
-
-		if( WriteChunk( ZED_CHUNK_FONT_GLYPH, Glyphs.GetSizeOnDisk( ),
-			pOutputFile ) != 0 )
-		{
-			SafeCloseFile( pOutputFile );
-			std::cout << "<ERROR> Failed to write glyph chunk" << std::endl;
-
-			return 1;
-		}
-		else
-		{
-			fwrite( &GlyphCount, sizeof( uint32_t ), 1, pOutputFile );
-
-			if( GlyphCount == 0 )
-			{
-				std::cout << "<WARNING> No glyphs have been processed" <<
-					std::endl;
-			}
-			else
-			{
-				std::cout << "Writing " << GlyphCount << " glyphs ..." <<
-					std::endl;
-
-				bool WriteFailed = false;
-
-				for( size_t i = 0; i < GlyphCount; ++i )
-				{
-					GLYPH_METRICS Glyph;
-					if( Glyphs.GetGlyph( i, &Glyph ) != 0 )
-					{
-						std::cout << "<ERORR> Failed to write glyph " << i <<
-							std::endl;
-						WriteFailed |= true;
-
-						break;
-					}
-					
-					size_t Written = fwrite( &Glyph, sizeof( Glyph ), 1,
-						pOutputFile );
-
-					if( Written != 1 )
-					{
-						std::cout << "<ERROR> Failed to write glyph " << i <<
-							" to disk" << std::endl;
-						WriteFailed |= true;
-
-						break;
-					}
-
-					std::cout << "Glyph " << i << " written to disk" <<
-						std::endl;
-				}
-
-				if( WriteFailed )
-				{
-					std::cout << "Incomplete" << std::endl << std::endl;
-				}
-				else
-				{
-					std::cout << "Complete" << std::endl << std::endl;
-				}
-			}
-		}
-
-		if( WriteChunk( ZED_CHUNK_END, 0, pOutputFile ) != 0 )
-		{
-			SafeCloseFile( pOutputFile );
-			std::cout << "<ERROR> Failed to write end chunk for glyphs" <<
-				std::endl;
-
-			return 1;
-		}
-	}
-
 	if( !m_TargaFile.empty( ) )
 	{
 		unsigned char *pTargaData =
@@ -177,12 +94,41 @@ uint32_t FontFile::Write( )
 		size_t BytesRead = ftell( pTargaFile );
 		rewind( pTargaFile );
 
+		if( BytesRead <= sizeof( TARGA_HEADER ) )
+		{
+			SafeCloseFile( pTargaFile );
+			SafeCloseFile( pOutputFile );
+			std::cout << "<ERROR> Targa file is no larger or even smaller "
+				"than a Targa header" << std::endl;
+
+			return 1;
+		}
+
+		TARGA_HEADER TargaHeader;
+		size_t ReadHeader =
+			fread( &TargaHeader, sizeof( TARGA_HEADER ), 1, pTargaFile );
+
+		if( ReadHeader != 1 )
+		{
+			SafeCloseFile( pTargaFile );
+			SafeCloseFile( pOutputFile );
+			std::cout << "<ERROR> Failed to read header" << std::endl;
+
+			return 1;
+		}
+
+		rewind( pTargaFile );
+
+		m_GlyphHeader.TextureWidth = TargaHeader.Width;
+		m_GlyphHeader.TextureHeight = TargaHeader.Height;
+
 		std::cout << "Writing " << m_TargaFile << " as Targa to disk ..." <<
 			std::endl;
 
 		// Write start chunk
 		if( WriteChunk( ZED_CHUNK_FONT_TEXTURE, BytesRead, pOutputFile ) != 0 )
 		{
+			SafeCloseFile( pTargaFile );
 			SafeCloseFile( pOutputFile );
 			std::cout << "<ERROR> Failed to write Targa start chunk" <<
 				std::endl;
@@ -243,6 +189,7 @@ uint32_t FontFile::Write( )
 
 			if( WriteFailed || ReadFailed )
 			{
+				SafeCloseFile( pTargaFile );
 				SafeCloseFile( pOutputFile );
 				std::cout << "Incomplete" << std::endl;
 
@@ -252,15 +199,106 @@ uint32_t FontFile::Write( )
 			{
 				std::cout << "Complete" << std::endl;
 			}
-		}
 
-		if( WriteChunk( ZED_CHUNK_END, 0, pOutputFile ) != 0 )
+			if( WriteChunk( ZED_CHUNK_END, 0, pOutputFile ) != 0 )
+			{
+				SafeCloseFile( pTargaFile );
+				SafeCloseFile( pOutputFile );
+				std::cout << "<ERROR> Failed to write end chunk for Targa" <<
+					std::endl;
+
+				return 1;
+			}
+		}
+	}
+
+	if( !m_GlyphFile.empty( ) )
+	{
+		GlyphSet Glyphs;
+
+		Glyphs.ReadFromFile( m_GlyphFile );
+
+		m_GlyphHeader.Count = Glyphs.GetCount( );
+
+		if( WriteChunk( ZED_CHUNK_FONT_GLYPH, Glyphs.GetSizeOnDisk( ) +
+			sizeof( m_GlyphHeader ), pOutputFile ) != 0 )
 		{
 			SafeCloseFile( pOutputFile );
-			std::cout << "<ERROR> Failed to write end chunk for Targa" <<
-				std::endl;
+			std::cout << "<ERROR> Failed to write glyph chunk" << std::endl;
 
 			return 1;
+		}
+		else
+		{
+			size_t WriteSize =
+				fwrite( &m_GlyphHeader, sizeof( GLYPHHEADER ), 1, pOutputFile );
+			if( WriteSize != 1 )
+			{
+				SafeCloseFile( pOutputFile );
+				std::cout << "<ERROR> Failed to write glyph count" <<
+					std::endl;
+				
+				return 1;
+			}
+
+			if( m_GlyphHeader.Count == 0 )
+			{
+				std::cout << "<WARNING> No glyphs have been processed" <<
+					std::endl;
+			}
+			else
+			{
+				std::cout << "Writing " << m_GlyphHeader.Count << " glyphs ..." <<
+					std::endl;
+
+				bool WriteFailed = false;
+
+				for( size_t i = 0; i < m_GlyphHeader.Count; ++i )
+				{
+					GLYPH_METRICS Glyph;
+					if( Glyphs.GetGlyph( i, &Glyph ) != 0 )
+					{
+						std::cout << "<ERORR> Failed to write glyph " << i <<
+							std::endl;
+						WriteFailed |= true;
+
+						break;
+					}
+					
+					size_t Written = fwrite( &Glyph, sizeof( Glyph ), 1,
+						pOutputFile );
+
+					if( Written != 1 )
+					{
+						std::cout << "<ERROR> Failed to write glyph " << i <<
+							" to disk" << std::endl;
+						WriteFailed |= true;
+
+						break;
+					}
+
+					std::cout << "Glyph " << i << " written to disk" <<
+						std::endl;
+				}
+
+				if( WriteFailed )
+				{
+					std::cout << "Incomplete" << std::endl << std::endl;
+				}
+				else
+				{
+					std::cout << "Complete" << std::endl << std::endl;
+				}
+			}
+
+			if( WriteChunk( ZED_CHUNK_END, 0, pOutputFile ) != 0 )
+			{
+				SafeCloseFile( pOutputFile );
+				std::cout << "<ERROR> Failed to write end chunk for glyphs" <<
+					std::endl;
+
+				return 1;
+			}
 		}
 	}
 
@@ -272,6 +310,8 @@ uint32_t FontFile::Write( )
 
 		return 1;
 	}
+
+	std::cout << "END" << std::endl;
 
 	SafeCloseFile( pOutputFile );
 

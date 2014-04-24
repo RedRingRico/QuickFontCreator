@@ -14,6 +14,7 @@ typedef struct __GLYPH_METRICS
 	uint32_t		Y;
 	uint32_t		Width;
 	uint32_t		Height;
+	uint32_t		BearingY;
 }GLYPH_METRICS;
 
 #pragma pack( )
